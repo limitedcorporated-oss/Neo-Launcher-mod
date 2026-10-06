@@ -6,9 +6,11 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ExperimentalFaoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
@@ -105,16 +107,40 @@ fun NeoLauncherApp() {
                     Spacer(Modifier.height(10.dp))
                     
                     LazyVerticalGrid(columns = GridCells.Fixed(2), verticalArrangement = Arrangement.spacedBy(2.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
-                        items(apps.take(15)) { app ->
-                            Row(Modifier.fillMaxWidth().clickable {
-                                context.packageManager.getLaunchIntentForPackage(app.packageName)?.let(context::startActivity)
-                            }.padding(vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text("›", color = Color(0xFFC678DD), fontFamily = FontFamily.Monospace, fontSize = 18.sp)
-                                Spacer(Modifier.width(8.dp))
-                                Text(app.label, color = Color(0xFFE6E6E6), fontFamily = FontFamily.Monospace, fontSize = 15.sp, maxLines = 1)
-                            }
+                        items(apps.take(8)) { app ->
+                           Box {
+                               Row(
+                                   Modifier
+                                       .fillMaxWidth()
+                                       .combinedClickable(
+                                           onClick = { context.packageManager.getLaunchIntentForPackage(app.packageName)?.let(context::startActivity) },
+                                           onLongClick = { menuApp = app } // Buka menu saat ditekan lama
+                                       )
+                                       .padding(vertical = 9.dp), 
+                                   verticalAlignment = Alignment.CenterVertically
+                               ) {
+                                   Text("›", color = Color(0xFFC678DD), fontFamily = FontFamily.Monospace, fontSize = 18.sp)
+                                   Spacer(Modifier.width(8.dp))
+                                   Text(app.label, color = Color(0xFFE6E6E6), fontFamily = FontFamily.Monospace, fontSize = 15.sp, maxLines = 1)
+                               }
+        
+                               // Komponen Menu
+                               DropdownMenu(
+                                   expanded = menuApp == app,
+                                   onDismissRequest = { menuApp = null }
+                              ) {
+                                   DropdownMenuItem(
+                                       text = { Text("Info Aplikasi") },
+                                       onClick = { 
+                                           menuApp = null
+                                           // Kode untuk membuka pengaturan aplikasi
+                                           val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:${app.packageName}"))
+                                           context.startActivity(intent)
+                                      }
+                                  )
+                              }
+                           }
                         }
-                    }
                     Text("────────────────────────", color = Color(0xFF39414D), fontFamily = FontFamily.Monospace)
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

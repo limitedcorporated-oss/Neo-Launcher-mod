@@ -51,12 +51,17 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NeoLauncherApp() {
     val context = LocalContext.current
     var time by remember { mutableStateOf("") }
     var apps by remember { mutableStateOf(emptyList<AppInfo>()) }
+    
+    // Variabel Status Penunjuk Halaman dan Menu
     var laciTerbuka by remember { mutableStateOf(false) } 
+    var menuPengaturan by remember { mutableStateOf(false) } 
+    var menuApp by remember { mutableStateOf<AppInfo?>(null) } // Perbaikan: Variabel menuApp ditambahkan
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -82,7 +87,10 @@ fun NeoLauncherApp() {
     }
 
     MaterialTheme {
-        if (laciTerbuka) {
+        if (menuPengaturan) {
+            // Nanti jika kamu sudah membuat file LayarPengaturan.kt, baris di bawah akan berjalan
+            // LayarPengaturan(onClose = { menuPengaturan = false })
+        } else if (laciTerbuka) {
             LaciAplikasi(apps = apps, onClose = { laciTerbuka = false })
         } else {
             Surface(Modifier.fillMaxSize(), color = Color(0xFF080A0F)) {
@@ -108,39 +116,36 @@ fun NeoLauncherApp() {
                     
                     LazyVerticalGrid(columns = GridCells.Fixed(2), verticalArrangement = Arrangement.spacedBy(2.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
                         items(apps.take(8)) { app ->
-                           Box {
-                               Row(
-                                   Modifier
-                                       .fillMaxWidth()
-                                       .combinedClickable(
-                                           onClick = { context.packageManager.getLaunchIntentForPackage(app.packageName)?.let(context::startActivity) },
-                                           onLongClick = { menuApp = app } // Buka menu saat ditekan lama
-                                       )
-                                       .padding(vertical = 9.dp), 
-                                   verticalAlignment = Alignment.CenterVertically
-                               ) {
-                                   Text("›", color = Color(0xFFC678DD), fontFamily = FontFamily.Monospace, fontSize = 18.sp)
-                                   Spacer(Modifier.width(8.dp))
-                                   Text(app.label, color = Color(0xFFE6E6E6), fontFamily = FontFamily.Monospace, fontSize = 15.sp, maxLines = 1)
-                               }
-        
-                               // Komponen Menu
-                               DropdownMenu(
-                                   expanded = menuApp == app,
-                                   onDismissRequest = { menuApp = null }
-                              ) {
-                                   DropdownMenuItem(
-                                       text = { Text("Info Aplikasi") },
-                                       onClick = { 
-                                           menuApp = null
-                                           // Kode untuk membuka pengaturan aplikasi
-                                           val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:${app.packageName}"))
-                                           context.startActivity(intent)
-                                      }
-                                  )
-                              }
-                           }
+                            Box {
+                                Row(
+                                    Modifier.fillMaxWidth().combinedClickable(
+                                        onClick = { context.packageManager.getLaunchIntentForPackage(app.packageName)?.let(context::startActivity) },
+                                        onLongClick = { menuApp = app }
+                                    ).padding(vertical = 9.dp), 
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("›", color = Color(0xFFC678DD), fontFamily = FontFamily.Monospace, fontSize = 18.sp)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(app.label, color = Color(0xFFE6E6E6), fontFamily = FontFamily.Monospace, fontSize = 15.sp, maxLines = 1)
+                                }
+                                
+                                // Menu Dropdown Tekan Lama
+                                DropdownMenu(
+                                    expanded = menuApp == app,
+                                    onDismissRequest = { menuApp = null }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Info Aplikasi", fontFamily = FontFamily.Monospace) },
+                                        onClick = { 
+                                            menuApp = null
+                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:${app.packageName}"))
+                                            context.startActivity(intent)
+                                        }
+                                    )
+                                }
+                            }
                         }
+                    }
                     Text("────────────────────────", color = Color(0xFF39414D), fontFamily = FontFamily.Monospace)
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -148,7 +153,7 @@ fun NeoLauncherApp() {
                         Spacer(Modifier.weight(1f))
                         Text("Neo Launcher v0.1", color = Color(0xFF7F8793), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                     }
-                    Row(Modifier.fillMaxWidth().clickable { context.startActivity(Intent(Settings.ACTION_SETTINGS)) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().clickable { menuPengaturan = true /* Atau buka settings HP */ }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("> ", color = Color(0xFF66D9EF), fontFamily = FontFamily.Monospace)
                         Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color(0xFFABB2BF), modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
@@ -160,6 +165,7 @@ fun NeoLauncherApp() {
     }
 }
 
+// Perbaikan: Pastikan LaciAplikasi ada di blok terluar, sejajar dengan fungsi NeoLauncherApp
 @Composable
 fun LaciAplikasi(apps: List<AppInfo>, onClose: () -> Unit) {
     val context = LocalContext.current
